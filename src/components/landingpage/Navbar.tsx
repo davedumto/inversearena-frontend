@@ -13,8 +13,14 @@ const Navbar = () => {
                     <div className="text-zinc-500 uppercase">SECURE_MODE: STELLAR_SOROBAN</div>
                 </div>
                 <div className="flex gap-6 text-zinc-500 items-center">
-                    <div className="font-medium">YIELD_GEN_ACTIVE: <span className="text-neon-pink">8.4% APY</span> //</div>
-                    <div className="hidden lg:block font-medium">GLOBAL_POOL: <span className="text-white">1,630,903 USDC</span> //</div>
+                    <div className="font-medium">
+                        YIELD_GEN_ACTIVE: <span className="text-neon-pink">8.4% APY</span>{" "}
+                        {"//"}
+                    </div>
+                    <div className="hidden lg:block font-medium">
+                        GLOBAL_POOL: <span className="text-white">1,630,903 USDC</span>{" "}
+                        {"//"}
+                    </div>
                     <div className="flex items-center gap-1.5 font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-neon-pink" />
                         ROUND_#842_PENDING

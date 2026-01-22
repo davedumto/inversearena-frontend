@@ -17,11 +17,11 @@ const YieldShowcase = () => {
 
                         <div className="space-y-6 max-w-sm">
                             <p className="text-white text-lg font-extralight uppercase tracking-tight family-mono">
-                                Your entry fee isn't just sitting there.
+                                Your entry fee isn&apos;t just sitting there.
                             </p>
 
                             <p className="text-zinc-400 font-mono text-[10px] leading-relaxed uppercase font-medium tracking-widest opacity-80">
-                                While you play, your capital is deployed into Real-World Assets (RWA) like Treasury bills and private credit. This generates real interest that is credited to your account, ensuring you earn yield regardless of the game's outcome.
+                                While you play, your capital is deployed into Real-World Assets (RWA) like Treasury bills and private credit. This generates real interest that is credited to your account, ensuring you earn yield regardless of the game&apos;s outcome.
                             </p>
                         </div>
 
