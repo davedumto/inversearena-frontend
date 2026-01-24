@@ -40,3 +40,8 @@ body {
 .font-extralight {
   font-weight: 200;
 }
+
+/* Pixel art font */
+.font-pixel {
+  font-family: var(--font-pixel), monospace;
+}

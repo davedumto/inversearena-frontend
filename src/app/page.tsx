@@ -19,6 +19,12 @@ export default function Home() {
   <BottomCta />
 </main>
 
+        <Hero />
+        <Protocol />
+        <WhyInverse />
+        <YieldShowcase />
+        <BottomCta />
+      </main>
 
       <Footer />
     </div>
