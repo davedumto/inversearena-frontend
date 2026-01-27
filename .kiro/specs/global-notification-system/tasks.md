@@ -28,13 +28,13 @@
     - **Validates: Requirements 3.1, 3.2, 3.3**
 
 - [ ] 3. Create useNotification hook
-  - [ ] 3.1 Implement base notification hook with context consumption
+  - [x] 3.1 Implement base notification hook with context consumption
     - Create hook that consumes NotificationContext
     - Implement error handling for usage outside provider
     - Add base notify function that accepts notification configuration
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 3.2 Add type-specific notification methods
+  - [x] 3.2 Add type-specific notification methods
     - Implement notify.success, notify.error, notify.info, notify.warning shortcuts
     - Ensure each method applies correct type and default configurations
     - Add proper TypeScript typing for all methods
