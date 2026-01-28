@@ -5,18 +5,6 @@ import { Modal } from "@/components/ui/Modal";
 import { useWallet } from "@/shared-d/hooks/useWallet";
 import { TransactionModal } from "@/components/modals/TransactionModal";
 import { buildCreatePoolTransaction, submitSignedTransaction } from "@/shared-d/utils/stellar-transactions";
-import {
-  validateStakeAmount,
-  formatCurrencyInput,
-  sanitizeNumericInput,
-  getDecimalPrecision,
-  type Currency,
-} from "@/shared-d/utils/form-validation";
-import {
-  estimateCreatePoolFee,
-  formatFeeDisplay,
-  formatTotalCostDisplay,
-} from "@/shared-d/utils/stellar-fees";
 
 type RoundSpeed = "30S" | "1M" | "5M";
 
@@ -48,24 +36,10 @@ export function PoolCreationModal({
   const [roundSpeed, setRoundSpeed] = useState<RoundSpeed>("1M");
   const [arenaCapacity, setArenaCapacity] = useState(50);
 
-  // Validation state
-  const [stakeError, setStakeError] = useState<string>("");
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [isDeploying, setIsDeploying] = useState(false);
-
-  // Refs for accessibility
-  const stakeInputRef = useRef<HTMLInputElement>(null);
-  const stakeErrorRef = useRef<HTMLDivElement>(null);
-
-  // Fee estimation
-  const [estimatedFee] = useState(estimateCreatePoolFee());
-
-  const { isConnected, address, connect, signTransaction, balance, isLoadingBalance } = useWallet();
+  const { isConnected, address, connect, signTransaction } = useWallet();
   const [showTxModal, setShowTxModal] = useState(false);
   const [txDetails, setTxDetails] = useState<{ label: string; value: string | number }[]>([]);
 
-  // Parse stake amount for calculations
-  const stakeAmount = parseFloat(stakeAmountInput) || 0;
   const totalPotentialPool = stakeAmount * arenaCapacity;
   const dynamicYield = 8.42;
   const minorityWinCap = 14.5;
@@ -142,10 +116,6 @@ export function PoolCreationModal({
     setArenaCapacity((prev) => Math.min(MAX_CAPACITY, prev + 10));
   };
 
-  // Check if capacity buttons should be disabled
-  const isDecreaseDisabled = arenaCapacity <= MIN_CAPACITY;
-  const isIncreaseDisabled = arenaCapacity >= MAX_CAPACITY;
-
   return (
     <>
       <Modal
@@ -187,57 +157,21 @@ export function PoolCreationModal({
                 </div>
                 <div className="flex gap-0 border-3 border-black bg-[#0F172A]">
                   <input
-                    ref={stakeInputRef}
-                    type="text"
-                    value={stakeAmountInput}
-                    onChange={(e) => handleStakeAmountChange(e.target.value)}
+                    type="number"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(Number(e.target.value))}
                     className="w-full bg-transparent border-none text-3xl font-black p-4 focus:ring-0 focus:outline-none text-primary placeholder:text-slate-700"
                     placeholder="0.00"
-                    aria-label="Stake amount"
-                    aria-invalid={!!stakeError}
-                    aria-describedby={stakeError ? "stake-error" : undefined}
                   />
                   <select
                     value={currency}
-                    onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
+                    onChange={(e) => setCurrency(e.target.value as Currency)}
                     className="bg-primary text-black border-l-3 border-black font-black text-lg px-4 appearance-none cursor-pointer focus:ring-0 focus:outline-none"
-                    aria-label="Currency selection"
                   >
                     <option value="USDC">USDC</option>
                     <option value="XLM">XLM</option>
                   </select>
                 </div>
-
-                {/* Balance display */}
-                {isConnected && (
-                  <div className="mt-3 text-sm font-bold text-slate-400">
-                    {isLoadingBalance ? (
-                      <span className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm animate-spin">cached</span>
-                        Loading balance...
-                      </span>
-                    ) : (
-                      <span>
-                        Balance: {currency === "XLM" ? balance.xlm.toFixed(7) : balance.usdc.toFixed(2)} {currency}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Error message */}
-                {stakeError && (
-                  <div
-                    ref={stakeErrorRef}
-                    id="stake-error"
-                    tabIndex={-1} // Make focusable for screen readers
-                    className="mt-3 text-sm font-bold text-red-500 flex items-start gap-2 outline-none"
-                    role="alert"
-                    aria-live="polite"
-                  >
-                    <span className="material-symbols-outlined text-base">error</span>
-                    <span>{stakeError}</span>
-                  </div>
-                )}
               </section>
 
               <section className="bg-[#1e293b] border-3 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
@@ -275,26 +209,22 @@ export function PoolCreationModal({
                   <button
                     type="button"
                     onClick={handleDecreaseCapacity}
-                    disabled={isDecreaseDisabled}
-                    className="size-10 bg-slate-800 border-2 border-black flex items-center justify-center font-black text-xl text-white hover:bg-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-white"
-                    aria-label="Decrease arena capacity"
+                    className="size-10 bg-slate-800 border-2 border-black flex items-center justify-center font-black text-xl text-white hover:bg-primary hover:text-black transition-all"
                   >
                     -
                   </button>
-                  <div className="text-3xl font-black text-white" aria-label="Arena capacity">{arenaCapacity}</div>
+                  <div className="text-3xl font-black text-white">{arenaCapacity}</div>
                   <button
                     type="button"
                     onClick={handleIncreaseCapacity}
-                    disabled={isIncreaseDisabled}
-                    className="size-10 bg-slate-800 border-2 border-black flex items-center justify-center font-black text-xl text-white hover:bg-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-white"
-                    aria-label="Increase arena capacity"
+                    className="size-10 bg-slate-800 border-2 border-black flex items-center justify-center font-black text-xl text-white hover:bg-primary hover:text-black transition-all"
                   >
                     +
                   </button>
                 </div>
                 <div className="mt-3 flex justify-between text-xs font-bold uppercase text-slate-500">
-                  <span className={isDecreaseDisabled ? "text-primary" : ""}>Min: {MIN_CAPACITY}</span>
-                  <span className={isIncreaseDisabled ? "text-primary" : ""}>Max: {MAX_CAPACITY}</span>
+                  <span>Min: {MIN_CAPACITY}</span>
+                  <span>Max: {MAX_CAPACITY}</span>
                 </div>
               </section>
             </div>
@@ -306,6 +236,7 @@ export function PoolCreationModal({
                     security
                   </span>
                 </div>
+              </section>
 
                 <div className="relative z-10 h-full flex flex-col">
                   <div className="flex justify-between items-start mb-8">
@@ -363,53 +294,29 @@ export function PoolCreationModal({
             </div>
 
             <div className="col-span-12 mt-4">
-              {/* Fee and Total Cost Display */}
-              {isConnected && isFormValid && (
-                <div className="mb-4 bg-[#1e293b] border-3 border-black p-4 space-y-2">
-                  <div className="flex justify-between items-center text-sm font-bold">
-                    <span className="text-slate-400 uppercase tracking-wide">Estimated Network Fee:</span>
-                    <span className="text-white">{formatFeeDisplay(estimatedFee)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-base font-black border-t-2 border-white/10 pt-2">
-                    <span className="text-primary uppercase tracking-wide">Total Cost:</span>
-                    <span className="text-primary">{formatTotalCostDisplay(stakeAmount, currency, estimatedFee)}</span>
-                  </div>
-                </div>
-              )}
-
               <button
                 type="button"
                 onClick={async () => {
                   if (!isConnected) {
                     await connect();
-                  } else if (isFormValid) {
+                  } else {
                     setTxDetails([
                       { label: "Operation", value: "Create Pool" },
                       { label: "Stake Amount", value: `${stakeAmount} ${currency}` },
                       { label: "Round Speed", value: roundSpeed },
                       { label: "Capacity", value: arenaCapacity },
-                      { label: "Network Fee", value: formatFeeDisplay(estimatedFee) },
                       { label: "Network", value: "Soroban Testnet" },
                     ]);
                     setShowTxModal(true);
                   }
                 }}
-                disabled={isConnected && !isFormValid}
-                className="w-full bg-primary text-black border-3 border-black py-6 text-2xl lg:text-3xl font-black uppercase italic tracking-tighter shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000]"
-                aria-label={isConnected ? "Initialize arena" : "Connect wallet"}
+                className="w-full bg-primary text-black border-3 border-black py-6 text-2xl lg:text-3xl font-black uppercase italic tracking-tighter shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
               >
-                {isConnected ? (isDeploying ? "Deploying..." : "Initialize Arena") : "Connect Wallet"}
-                <span className={`material-symbols-outlined text-3xl ${isDeploying ? "animate-spin" : ""}`}>
-                  {isConnected ? (isDeploying ? "cached" : "rocket_launch") : "account_balance_wallet"}
+                {isConnected ? "Initialize Arena" : "Connect Wallet"}
+                <span className="material-symbols-outlined text-3xl">
+                  {isConnected ? "rocket_launch" : "account_balance_wallet"}
                 </span>
               </button>
-
-              {/* Validation hint when form is invalid */}
-              {isConnected && !isFormValid && (
-                <div className="mt-3 text-sm font-bold text-slate-500 text-center">
-                  Please correct the errors above to continue
-                </div>
-              )}
 
               <div className="mt-4 flex justify-center items-center gap-6 text-slate-500 font-bold text-xs uppercase tracking-widest flex-wrap">
                 <div className="flex items-center gap-2">
@@ -435,29 +342,23 @@ export function PoolCreationModal({
         details={txDetails}
         onConfirm={async () => {
           if (!address) return;
-          setIsDeploying(true);
-          try {
-            const tx = await buildCreatePoolTransaction(address, {
-              stakeAmount,
-              currency,
-              roundSpeed,
-              arenaCapacity,
-            });
-            const signedXdr = await signTransaction(tx.toXDR());
-            await submitSignedTransaction(signedXdr);
-            // Notify parent of success
-            onInitialize?.({
-              stakeAmount,
-              currency,
-              roundSpeed,
-              arenaCapacity,
-            });
-            // We DON'T call onClose() here because we want the user to see the "SUCCESS" state 
-            // of the TransactionModal. The TransactionModal's "Close" button will close it via setShowTxModal(false).
-          } catch (err) {
-            setIsDeploying(false);
-            throw err; // Re-throw so TransactionModal shows error
-          }
+          const tx = await buildCreatePoolTransaction(address, {
+            stakeAmount,
+            currency,
+            roundSpeed,
+            arenaCapacity,
+          });
+          const signedXdr = await signTransaction(tx.toXDR());
+          await submitSignedTransaction(signedXdr);
+          // Notify parent of success if needed
+          onInitialize?.({
+            stakeAmount,
+            currency,
+            roundSpeed,
+            arenaCapacity,
+          });
+          setShowTxModal(false);
+          onClose(); // Close the pool creation modal too
         }}
         confirmLabel="Sign & Deploy"
       />

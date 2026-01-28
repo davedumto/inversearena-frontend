@@ -36,44 +36,11 @@ export interface UseWalletReturn {
   disconnect: () => void;
   /** Sign a transaction XDR */
   signTransaction: (xdr: string, network?: string) => Promise<string>;
-  /** Fetch wallet balances */
-  fetchBalance: () => Promise<void>;
 }
 
 // Contract IDs for balance fetching
 const XLM_CONTRACT_ID = "CAS3J7GYLGXMF6TDJBXBGMELNUPVCGXIZ68TZE6GTVASJ63Y32KXVY77"; // Testnet Native SAC
 const USDC_CONTRACT_ID = "CC..."; // TODO: Add real USDC Contract ID
-
-/**
- * Fetch balance for a specific asset from Horizon
- */
-async function fetchAssetBalance(publicKey: string, assetCode: string): Promise<number> {
-  try {
-    const res = await fetch(`https://horizon-testnet.stellar.org/accounts/${publicKey}`);
-    if (!res.ok) {
-      return 0;
-    }
-    const data = await res.json();
-
-    // Find the balance for the specific asset
-    const balances = data.balances || [];
-
-    if (assetCode === "XLM") {
-      // Native balance
-      const nativeBalance = balances.find((b: any) => b.asset_type === "native");
-      return nativeBalance ? parseFloat(nativeBalance.balance) : 0;
-    } else {
-      // Token balance (USDC)
-      const tokenBalance = balances.find(
-        (b: any) => b.asset_code === assetCode && b.asset_type !== "native"
-      );
-      return tokenBalance ? parseFloat(tokenBalance.balance) : 0;
-    }
-  } catch (err) {
-    console.error(`Failed to fetch ${assetCode} balance:`, err);
-    return 0;
-  }
-}
 
 /**
  * Reusable wallet hook for managing wallet connection state
@@ -129,6 +96,25 @@ export function useWallet(): UseWalletReturn {
       fetchBalance();
     }
   }, [address, status, fetchBalance]);
+
+  // Check if wallet is already connected on mount
+  useEffect(() => {
+    async function checkConnection() {
+      try {
+        const connectionInfo = await isConnected();
+        if (connectionInfo?.isConnected) {
+          const addressInfo = await getAddress();
+          if (addressInfo?.address) {
+            setAddress(addressInfo.address);
+            setStatus('connected');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check wallet connection:', err);
+      }
+    }
+    checkConnection();
+  }, []);
 
   const connect = useCallback(async () => {
     try {
@@ -187,6 +173,22 @@ export function useWallet(): UseWalletReturn {
     }
   }, []);
 
+  const signTransaction = useCallback(async (xdr: string, network?: string) => {
+    try {
+      const networkPassphrase = network || "Test SDF Network ; September 2015"; // Default to Testnet
+      const result = await freighterSignTransaction(xdr, { networkPassphrase });
+
+      if (result.error) {
+        throw new Error(result.error.toString());
+      }
+
+      return result.signedTxXdr;
+    } catch (err) {
+      console.error("Signing error:", err);
+      throw err;
+    }
+  }, []);
+
   return {
     status,
     address,
@@ -197,6 +199,5 @@ export function useWallet(): UseWalletReturn {
     connect,
     disconnect,
     signTransaction,
-    fetchBalance,
   };
 }
