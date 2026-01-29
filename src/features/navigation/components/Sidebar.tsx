@@ -29,7 +29,7 @@ export function Sidebar() {
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
-    "/dashboard/lobby": (
+    "/dashboard/leaderboard": (
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
