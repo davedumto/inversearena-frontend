@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FeaturedArenaCard } from "@/features/dashboard-home/components/FeaturedArenaCard";
 import { YieldGeneratorPanel } from "@/features/dashboard-home/components/YieldGeneratorPanel";
 import {
@@ -13,6 +13,7 @@ import { RecentGames } from "@/features/dashboard-home/components/RecentGames";
 import { Announcements } from "@/features/dashboard-home/components/Announcements";
 import { MetricsPanel } from "@/features/dashboard-home/components/MetricsPanel";
 import { PoolCreationModal } from "@/components/modals/PoolCreationModal";
+import StakeModal from "@/components/modals/StakeModal";
 import TelemetryPage from "@/app/dashboard/telemetry-bar/page";
 
 import {
@@ -21,11 +22,36 @@ import {
   globalIntelItems,
   recentGames,
   activeAnnouncement,
-  networkMetrics,
 } from "@/features/dashboard-home/mockHome";
 
+const HAS_STAKED_KEY = "inversearena_has_staked";
+
 export default function DashboardHomePage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
+  const [isPoolModalOpen, setIsPoolModalOpen] = useState(false);
+  const [hasStaked, setHasStaked] = useState(false);
+
+  useEffect(() => {
+    const stored = typeof window !== "undefined" && localStorage.getItem(HAS_STAKED_KEY);
+    setHasStaked(stored === "true");
+  }, []);
+
+  const handleCreateArenaClick = () => {
+    if (hasStaked) {
+      setIsPoolModalOpen(true);
+    } else {
+      setIsStakeModalOpen(true);
+    }
+  };
+
+  const handleStakeSuccess = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(HAS_STAKED_KEY, "true");
+    }
+    setHasStaked(true);
+    setIsStakeModalOpen(false);
+    setIsPoolModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -43,7 +69,7 @@ export default function DashboardHomePage() {
             <QuickActionTile
               icon={<PlusIcon />}
               label="CREATE NEW ARENA"
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleCreateArenaClick}
             />
             <QuickActionTile icon={<GridIcon />} label="BROWSE POOLS" />
           </div>
@@ -55,15 +81,21 @@ export default function DashboardHomePage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <RecentGames games={recentGames} />
         <Announcements announcement={activeAnnouncement} />
-        <MetricsPanel metrics={networkMetrics} />
+        <MetricsPanel />
       </div>
 
+      <StakeModal
+        isOpen={isStakeModalOpen}
+        onClose={() => setIsStakeModalOpen(false)}
+        onSuccess={handleStakeSuccess}
+      />
+
       <PoolCreationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isPoolModalOpen}
+        onClose={() => setIsPoolModalOpen(false)}
         onInitialize={(data) => {
           console.log("Initializing pool:", data);
-          setIsModalOpen(false);
+          setIsPoolModalOpen(false);
         }}
       />
     </div>
