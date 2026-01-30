@@ -1,5 +1,6 @@
 import {
     Account,
+    Address,
     BASE_FEE,
     Contract,
     Operation,
@@ -15,6 +16,10 @@ import { Server } from "@stellar/stellar-sdk/rpc";
 export const FACTORY_CONTRACT_ID = "CB..."; // TODO: Add real Factory Contract ID
 export const XLM_CONTRACT_ID = "CAS3J7GYLGXMF6TDJBXBGMELNUPVCGXIZ68TZE6GTVASJ63Y32KXVY77"; // Testnet Native SAC
 export const USDC_CONTRACT_ID = "CC..."; // TODO: Add real USDC Contract ID
+
+const STAKING_CONTRACT_PLACEHOLDER = "CD...";
+export const STAKING_CONTRACT_ID =
+    process.env.NEXT_PUBLIC_STAKING_CONTRACT_ID || STAKING_CONTRACT_PLACEHOLDER;
 
 export const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015"; // Testnet
 export const SOROBAN_RPC_URL = "https://soroban-testnet.stellar.org";
@@ -71,6 +76,49 @@ export async function buildCreatePoolTransaction(
         .build();
 
     return tx;
+}
+
+/**
+ * Build an unsigned transaction to stake XLM via the protocol contract.
+ * Uses Soroban prepareTransaction for correct footprint and fees.
+ */
+export async function buildStakeProtocolTransaction(
+    publicKey: string,
+    amount: number
+) {
+    if (
+        !STAKING_CONTRACT_ID ||
+        STAKING_CONTRACT_ID === STAKING_CONTRACT_PLACEHOLDER ||
+        STAKING_CONTRACT_ID.includes("...")
+    ) {
+        throw new Error(
+            "Staking contract not configured. Add NEXT_PUBLIC_STAKING_CONTRACT_ID to .env.local with your Soroban contract address."
+        );
+    }
+
+    const server = new Server(SOROBAN_RPC_URL);
+    const account = await getAccount(publicKey);
+    const stakingContract = new Contract(STAKING_CONTRACT_ID);
+
+    const amountStroops = BigInt(Math.floor(amount * 10_000_000));
+    const addressScVal = new Address(publicKey).toScVal();
+
+    const callOperation = stakingContract.call(
+        "stake",
+        addressScVal,
+        nativeToScVal(amountStroops, { type: "i128" })
+    );
+
+    const builtTx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+    })
+        .addOperation(callOperation)
+        .setTimeout(TimeoutInfinite)
+        .build();
+
+    const preparedTx = await server.prepareTransaction(builtTx);
+    return preparedTx;
 }
 
 /**
