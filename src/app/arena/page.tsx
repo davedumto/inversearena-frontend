@@ -8,6 +8,7 @@ import {
   ChooseYourFate,
   TotalYieldPot,
   RoundResolvedOverlay,
+  EliminationSummaryOverlay,
 } from "@/components/arena/core";
 import { useWallet } from "@/shared-d/hooks/useWallet";
 import { TransactionModal } from "@/components/modals/TransactionModal";
@@ -24,6 +25,7 @@ export default function ArenaPage() {
   const [selectedChoice, setSelectedChoice] = useState<"heads" | "tails" | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [hasWon, setHasWon] = useState(false);
+  const [showEliminationSummary, setShowEliminationSummary] = useState(false);
   const [survivors, setSurvivors] = useState({ current: 128, max: 1024 });
   const [userStatus, setUserStatus] = useState("STILL IN");
   const [currentStake, setCurrentStake] = useState(1200);
@@ -86,8 +88,11 @@ export default function ArenaPage() {
               </span>
             </div>
             <div className="flex gap-3">
-              <button className="border border-white/20 px-4 py-2 font-pixel text-[8px] text-white tracking-wider hover:bg-white/5">
-                SOROBAN LIVE
+              <button
+                onClick={() => setShowEliminationSummary(true)}
+                className="border border-neon-pink px-4 py-2 font-pixel text-[8px] text-neon-pink tracking-wider hover:bg-neon-pink/10"
+              >
+                TEST ELIMINATION
               </button>
               <button className="border border-white/20 px-4 py-2 font-pixel text-[8px] text-white tracking-wider hover:bg-white/5">
                 SOROBAN LIVE
@@ -356,6 +361,19 @@ export default function ArenaPage() {
           setSelectedChoice(null);
           setIsJoined(false);
         }}
+      />
+
+      {/* Elimination Summary Overlay */}
+      <EliminationSummaryOverlay
+        isOpen={showEliminationSummary}
+        roundsSurvived={3}
+        yieldEarned={1.20}
+        isSorobanSynced={true}
+        vaultStatus="safe"
+        lockTimeRemaining={12}
+        txLedgerUrl="https://stellar.expert/explorer/testnet"
+        onExitToLobby={() => setShowEliminationSummary(false)}
+        onJoinNewArena={() => setShowEliminationSummary(false)}
       />
     </>
   );
