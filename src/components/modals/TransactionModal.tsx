@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { parseStellarError } from "@/shared-d/utils/stellar-transactions";
 
 export type TransactionState = "REVIEW" | "SIGNING" | "SUBMITTING" | "SUCCESS" | "ERROR";
 
@@ -56,10 +57,12 @@ export function TransactionModal({
             // However, if onConfirm involves the whole flow including submission, it might take time.
             // Let's assume onConfirm resolves when the txn is successfully submitted on-chain or at least sent.
             setState("SUCCESS");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Transaction failed:", err);
             setState("ERROR");
-            setErrorMessage(err instanceof Error ? err.message : "Transaction failed");
+            // Use parseStellarError to get a user-friendly message
+            const parsedError = parseStellarError(err);
+            setErrorMessage(parsedError);
         }
     }, [onConfirm]);
 
@@ -166,10 +169,13 @@ export function TransactionModal({
                                 Close
                             </button>
                             <button
-                                onClick={() => setState("REVIEW")}
-                                className="flex-1 bg-red-500 text-black border-2 border-black py-4 font-black uppercase tracking-widest hover:brightness-110 transition-all"
+                                onClick={() => {
+                                    setErrorMessage(null);
+                                    setState("REVIEW");
+                                }}
+                                className="flex-1 bg-red-500 text-black border-2 border-black py-4 font-black uppercase tracking-widest hover:brightness-110 transition-all font-display"
                             >
-                                Retry
+                                Try Again
                             </button>
                         </div>
                     </div>

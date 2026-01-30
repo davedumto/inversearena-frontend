@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Timer,
   ChoiceCard,
@@ -14,14 +14,20 @@ import {
   buildJoinArenaTransaction,
   buildSubmitChoiceTransaction,
   buildClaimWinningsTransaction,
-  submitSignedTransaction
+  submitSignedTransaction,
+  fetchArenaState
 } from "@/shared-d/utils/stellar-transactions";
 
 export default function ArenaPage() {
-  const { isConnected, address, connect, signTransaction } = useWallet();
+  const { isConnected, address, connect, signTransaction, refreshBalance } = useWallet();
   const [selectedChoice, setSelectedChoice] = useState<"heads" | "tails" | null>(null);
-  const [isJoined, setIsJoined] = useState(false); // Mock state for demo
-  const [hasWon, setHasWon] = useState(false); // Mock win state
+  const [isJoined, setIsJoined] = useState(false);
+  const [hasWon, setHasWon] = useState(false);
+  const [survivors, setSurvivors] = useState({ current: 128, max: 1024 });
+  const [userStatus, setUserStatus] = useState("STILL IN");
+  const [currentStake, setCurrentStake] = useState(1200);
+  const [potentialPayout, setPotentialPayout] = useState(24420);
+  const [isLoadingArena, setIsLoadingArena] = useState(false);
 
   // Transaction Modal State
   const [showTxModal, setShowTxModal] = useState(false);
@@ -36,6 +42,30 @@ export default function ArenaPage() {
   const tailsYield = 58;
   const headsPercentage = 42;
   const tailsPercentage = 58;
+
+  const updateArenaState = useCallback(async () => {
+    if (!address) return;
+    setIsLoadingArena(true);
+    try {
+      const state = await fetchArenaState(ARENA_ID, address);
+      setSurvivors({ current: state.survivorsCount, max: state.maxCapacity });
+      setIsJoined(state.isUserIn);
+      setHasWon(state.hasWon);
+      setUserStatus(state.hasWon ? "WINNER!" : "STILL IN");
+      setCurrentStake(state.currentStake);
+      setPotentialPayout(state.potentialPayout);
+    } catch (error) {
+      console.error("Failed to fetch arena state:", error);
+    } finally {
+      setIsLoadingArena(false);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (isConnected && address) {
+      updateArenaState();
+    }
+  }, [isConnected, address, updateArenaState]);
 
   return (
     <>
@@ -151,8 +181,8 @@ export default function ArenaPage() {
               <p className="font-pixel text-[8px] text-white/60 tracking-wider mb-2">
                 SURVIVORS
               </p>
-              <p className="font-pixel text-3xl text-neon-green">128</p>
-              <p className="font-pixel text-sm text-white/40">/1024</p>
+              <p className="font-pixel text-3xl text-neon-green">{survivors.current}</p>
+              <p className="font-pixel text-sm text-white/40">/{survivors.max}</p>
               <div className="mt-3 h-2 bg-dark-bg">
                 <div className="h-full bg-neon-green w-[12.5%]" />
               </div>
@@ -196,12 +226,12 @@ export default function ArenaPage() {
                 YOUR STATUS
               </p>
               <p className="font-pixel text-xl text-black italic mb-4">
-                {hasWon ? "WINNER!" : "STILL IN"}
+                {userStatus}
               </p>
               <div className="space-y-2 text-[10px] font-mono text-black">
                 <div className="flex justify-between">
                   <span>CURRENT STAKE</span>
-                  <span className="font-bold">$1,200.00</span>
+                  <span className="font-bold">${currentStake.toLocaleString()}</span>
                 </div>
                 {hasWon ? (
                   <button
@@ -221,7 +251,7 @@ export default function ArenaPage() {
                 ) : (
                   <div className="flex justify-between">
                     <span>POTENTIAL PAYOUT</span>
-                    <span className="font-bold">$24,420.00</span>
+                    <span className="font-bold">${potentialPayout.toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -278,11 +308,9 @@ export default function ArenaPage() {
             const signedXdr = await signTransaction(tx.toXDR());
             await submitSignedTransaction(signedXdr);
 
-            if (txType === "JOIN") setIsJoined(true);
-            if (txType === "SUBMIT") {
-              setTimeout(() => setHasWon(true), 5000);
-            }
-            if (txType === "CLAIM") setHasWon(false);
+            // Trigger real-time updates
+            await refreshBalance();
+            await updateArenaState();
 
             setShowTxModal(false);
           } catch (e) {
