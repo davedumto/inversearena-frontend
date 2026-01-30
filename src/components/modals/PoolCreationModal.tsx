@@ -60,7 +60,7 @@ export function PoolCreationModal({
   // Fee estimation
   const [estimatedFee] = useState(estimateCreatePoolFee());
 
-  const { isConnected, address, connect, signTransaction, balance, isLoadingBalance } = useWallet();
+  const { isConnected, address, connect, signTransaction, balance, isLoadingBalance, refreshBalance } = useWallet();
   const [showTxModal, setShowTxModal] = useState(false);
   const [txDetails, setTxDetails] = useState<{ label: string; value: string | number }[]>([]);
 

@@ -36,8 +36,8 @@ export interface UseWalletReturn {
   disconnect: () => void;
   /** Sign a transaction XDR */
   signTransaction: (xdr: string, network?: string) => Promise<string>;
-  /** Fetch wallet balances */
-  fetchBalance: () => Promise<void>;
+  /** Refresh wallet balances */
+  refreshBalance: () => Promise<void>;
 }
 
 // Contract IDs for balance fetching
@@ -85,7 +85,7 @@ export function useWallet(): UseWalletReturn {
   const [balance, setBalance] = useState<Balance>({ xlm: 0, usdc: 0 });
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
-  const fetchBalance = useCallback(async () => {
+  const refreshBalance = useCallback(async () => {
     if (!address) return;
 
     setIsLoadingBalance(true);
@@ -126,9 +126,9 @@ export function useWallet(): UseWalletReturn {
   // Fetch balance when address changes (wallet connected)
   useEffect(() => {
     if (address && status === 'connected') {
-      fetchBalance();
+      refreshBalance();
     }
-  }, [address, status, fetchBalance]);
+  }, [address, status, refreshBalance]);
 
   const connect = useCallback(async () => {
     try {
@@ -197,6 +197,6 @@ export function useWallet(): UseWalletReturn {
     connect,
     disconnect,
     signTransaction,
-    fetchBalance,
+    refreshBalance,
   };
 }

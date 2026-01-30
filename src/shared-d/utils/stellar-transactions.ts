@@ -201,6 +201,51 @@ export async function buildClaimWinningsTransaction(
 }
 
 /**
+ * Parse Stellar error results to user-friendly messages
+ */
+export function parseStellarError(error: any): string {
+    const errorString = error?.message || error?.toString() || "";
+
+    if (errorString.includes("tx_bad_auth")) {
+        return "Invalid or unauthorized transaction. Please check your wallet permissions.";
+    }
+    if (errorString.includes("op_underfunded")) {
+        return "Insufficient balance to cover the transaction and fees.";
+    }
+    if (errorString.includes("tx_too_late")) {
+        return "Transaction expired. Please try again.";
+    }
+    if (errorString.includes("User rejected")) {
+        return "Transaction was cancelled by the user.";
+    }
+
+    return errorString || "An unknown error occurred during the transaction.";
+}
+
+/**
+ * Fetch the latest arena state from the contract
+ */
+export async function fetchArenaState(arenaId: string, userAddress?: string) {
+    // Mocking the contract call for now as we don't have the full ABI/Contract logic 
+    // but this represents where the Soroban RPC call would go.
+    // In a real implementation, we would use poolContract.call("get_state") or similar.
+
+    // Simulate network delay
+    await new Promise(r => setTimeout(r, 500));
+
+    // Return mock data that ArenaPage expects
+    return {
+        survivorsCount: 128,
+        maxCapacity: 1024,
+        isUserIn: userAddress ? true : false,
+        hasWon: false,
+        currentStake: 1200,
+        potentialPayout: 24420,
+        roundNumber: 12
+    };
+}
+
+/**
  * Submit a signed transaction to the network
  */
 export async function submitSignedTransaction(signedXdr: string) {
