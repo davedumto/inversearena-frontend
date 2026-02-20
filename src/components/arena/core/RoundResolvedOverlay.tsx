@@ -24,7 +24,7 @@ const backdrop = {
 
 const container = {
   hidden: { opacity: 0, scale: 0.98 },
-  visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 260, damping: 25 } },
+  visible: { opacity: 1, scale: 1, transition: { type: "spring" as const, stiffness: 260, damping: 25 } },
 };
 
 const cardVariants = {
