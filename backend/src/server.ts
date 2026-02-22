@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { db } from "./db/client";
+import { redis } from "./cache/redisClient";
 import { SqlTransactionRepository } from "./repositories/sqlTransactionRepository";
 import { PaymentService } from "./services/paymentService";
 import { PaymentWorker } from "./workers/paymentWorker";
@@ -10,6 +11,8 @@ const PORT = Number(process.env.PORT ?? 3001);
 async function main() {
   await db.connect();
   console.log("Connected to PostgreSQL");
+
+  await redis.connect();
 
   const transactions = new SqlTransactionRepository(db);
   const paymentService = new PaymentService(transactions);
