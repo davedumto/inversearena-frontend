@@ -16,22 +16,23 @@ export const SocialCard: React.FC<SocialCardProps> = ({
   variant = 'outline',
 }) => {
   const baseClasses = `
-    flex flex-col items-center justify-center
-    p-6 transition-all duration-200
-    font-black tracking-widest text-xs uppercase
+    flex items-center justify-start gap-4
+    px-5 py-4 transition-all duration-200
+    font-black tracking-widest text-[10px] uppercase
     cursor-pointer
+    shadow-[6px_6px_0px_0px_#000]
   `.trim();
 
   const outlineClasses = `
-    border-2 border-white text-white
-    hover:bg-white/10 hover:shadow-lg
+    border-2 border-black bg-white text-black
+    hover:bg-black/5
     active:scale-95
   `.trim();
 
   const filledClasses = `
-    bg-[#39FF14] text-black border-2 border-[#39FF14]
-    hover:bg-[#2de010] hover:border-[#2de010]
-    hover:shadow-[0_0_20px_rgba(57,255,20,0.5)]
+    bg-[#39FF14] text-black border-2 border-black
+    hover:bg-[#2de010]
+    hover:shadow-[8px_8px_0px_0px_#000]
     active:scale-95
   `.trim();
 
@@ -43,8 +44,8 @@ export const SocialCard: React.FC<SocialCardProps> = ({
       className={`${baseClasses} ${variantClass}`}
       style={{ borderRadius: 0 }}
     >
-      <div className="mb-3 text-2xl">{icon}</div>
-      <div className="text-center">{label}</div>
+      <div className="text-xl flex-shrink-0">{icon}</div>
+      <div className="text-left leading-tight">{label}</div>
     </button>
   );
 };
