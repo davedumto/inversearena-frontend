@@ -84,7 +84,7 @@ impl FactoryContract {
     /// * `new_wasm_hash` - 32-byte hash of the new contract WASM to deploy.
     ///
     /// # Errors
-    /// Panics with `"not initialized"` if [`initialize`](Self::initialize) has not been called.
+    /// Panics with `"not initialized"` if the contract has not been initialized.
     ///
     /// # Authorization
     /// Requires admin signature (`admin.require_auth()`).
