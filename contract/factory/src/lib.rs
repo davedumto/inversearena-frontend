@@ -97,6 +97,17 @@ impl FactoryContract {
             .expect("not initialized")
     }
 
+    /// Set a new admin address. Only the current admin can call this.
+    pub fn set_admin(env: Env, new_admin: Address) {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&ADMIN_KEY)
+            .expect("not initialized");
+        admin.require_auth();
+        env.storage().instance().set(&ADMIN_KEY, &new_admin);
+    }
+
     /// Set the WASM hash for arena contract deployment.
     /// Admin-only.
     pub fn set_arena_wasm_hash(env: Env, wasm_hash: BytesN<32>) {
@@ -231,6 +242,7 @@ impl FactoryContract {
 
         env.events()
             .publish((TOPIC_POOL_CREATED,), (pool_id, creator, capacity, stake_amount));
+>>>>>>> upstream/main
     }
 
     // ── Upgrade mechanism ────────────────────────────────────────────────────

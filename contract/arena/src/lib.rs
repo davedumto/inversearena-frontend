@@ -10,6 +10,8 @@ const ADMIN_KEY: Symbol = symbol_short!("ADMIN");
 const PAUSED_KEY: Symbol = symbol_short!("PAUSED");
 const PENDING_HASH_KEY: Symbol = symbol_short!("P_HASH");
 const EXECUTE_AFTER_KEY: Symbol = symbol_short!("P_AFTER");
+const PRIZE_POOL_KEY: Symbol = symbol_short!("PRIZE");
+const GAME_STATUS_KEY: Symbol = symbol_short!("G_STATUS");
 
 // ── Timelock constant: 48 hours in seconds ────────────────────────────────────
 
@@ -48,6 +50,9 @@ pub enum ArenaError {
     ArenaFull = 11,
     AlreadyJoined = 12,
     InvalidAmount = 13,
+    NoPrizeToClaim = 14,
+    AlreadyClaimed = 15,
+    ReentrancyGuard = 16,
 }
 
 #[contracttype]
@@ -81,6 +86,7 @@ enum DataKey {
     Round,
     Submission(u32, Address),
     Survivor(Address),
+    PrizeClaimed(Address),
 }
 
 // ── Contract ──────────────────────────────────────────────────────────────────
@@ -177,6 +183,17 @@ impl ArenaContract {
             .instance()
             .get(&ADMIN_KEY)
             .expect("not initialized")
+    }
+
+    /// Set a new admin address. Only the current admin can call this.
+    pub fn set_admin(env: Env, new_admin: Address) {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&ADMIN_KEY)
+            .expect("not initialized");
+        admin.require_auth();
+        env.storage().instance().set(&ADMIN_KEY, &new_admin);
     }
 
     /// Pause the contract. Admin-only.
@@ -283,7 +300,12 @@ impl ArenaContract {
     ///
     /// # Authorization
     /// Requires `player.require_auth()` — the transaction must be signed by `player`.
-    pub fn submit_choice(env: Env, player: Address, choice: Choice) -> Result<(), ArenaError> {
+    pub fn submit_choice(
+        env: Env,
+        player: Address,
+        round_number: u32,
+        choice: Choice,
+    ) -> Result<(), ArenaError> {
         require_not_paused(&env)?;
         env.storage()
             .instance()
@@ -293,6 +315,10 @@ impl ArenaContract {
         let mut round = get_round(&env)?;
         if !round.active {
             return Err(ArenaError::NoActiveRound);
+        }
+
+        if round_number != round.round_number {
+            return Err(ArenaError::RoundDeadlineOverflow);
         }
 
         let current_ledger = env.ledger().sequence();
@@ -390,6 +416,40 @@ impl ArenaContract {
     /// None — read-only, open to any caller.
     pub fn get_choice(env: Env, round_number: u32, player: Address) -> Option<Choice> {
         storage(&env).get(&DataKey::Submission(round_number, player))
+    }
+
+    pub fn claim(env: Env, winner: Address) -> Result<i128, ArenaError> {
+        winner.require_auth();
+
+        if env
+            .storage()
+            .instance()
+            .get::<_, bool>(&GAME_STATUS_KEY)
+            .unwrap_or(false)
+        {
+            return Err(ArenaError::ReentrancyGuard);
+        }
+
+        let prize: i128 = env.storage().instance().get(&PRIZE_POOL_KEY).unwrap_or(0);
+        if prize <= 0 {
+            return Err(ArenaError::NoPrizeToClaim);
+        }
+
+        let prize_key = DataKey::PrizeClaimed(winner.clone());
+        if storage(&env).has(&prize_key) {
+            return Err(ArenaError::AlreadyClaimed);
+        }
+
+        env.storage().instance().set(&GAME_STATUS_KEY, &true);
+
+        storage(&env).set(&prize_key, &prize);
+        bump(&env, &prize_key);
+
+        env.storage().instance().set(&PRIZE_POOL_KEY, &0i128);
+
+        env.storage().instance().set(&GAME_STATUS_KEY, &false);
+
+        Ok(prize)
     }
 
     // ── Upgrade mechanism ────────────────────────────────────────────────────
