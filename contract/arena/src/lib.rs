@@ -4,8 +4,8 @@ mod bounds;
 mod invariants;
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token,
-    Address, BytesN, Env, Symbol,
+    Address, BytesN, Env, Symbol, contract, contracterror, contractimpl, contracttype,
+    symbol_short, token,
 };
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
@@ -455,7 +455,11 @@ impl ArenaContract {
             });
         let prize_pool: i128 = env.storage().instance().get(&PRIZE_POOL_KEY).unwrap_or(0);
         let max_capacity: u32 = env.storage().instance().get(&CAPACITY_KEY).unwrap_or(0);
-        let survivors_count: u32 = env.storage().instance().get(&SURVIVOR_COUNT_KEY).unwrap_or(0);
+        let survivors_count: u32 = env
+            .storage()
+            .instance()
+            .get(&SURVIVOR_COUNT_KEY)
+            .unwrap_or(0);
         Ok(ArenaStateView {
             survivors_count,
             max_capacity,

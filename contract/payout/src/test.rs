@@ -1,10 +1,9 @@
 #[cfg(test)]
 use super::*;
 use soroban_sdk::{
-    symbol_short,
+    Address, Env, Vec, symbol_short,
     testutils::Address as _,
     token::{StellarAssetClient, TokenClient},
-    Address, Env, Vec,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -111,13 +110,8 @@ fn test_admin_spoofing_rejected_without_auth() {
     client.initialize(&admin);
 
     let winner = Address::generate(&env);
-    let result = client.try_distribute_winnings(
-        &admin,
-        &1u32,
-        &winner,
-        &1000i128,
-        &symbol_short!("XLM"),
-    );
+    let result =
+        client.try_distribute_winnings(&admin, &1u32, &winner, &1000i128, &symbol_short!("XLM"));
     assert!(result.is_err());
 }
 

@@ -6,9 +6,9 @@ use std::vec::Vec;
 use super::*;
 use proptest::prelude::*;
 use soroban_sdk::{
+    Address, BytesN, Env,
     testutils::{Address as _, Ledger as _, LedgerInfo},
     token::StellarAssetClient,
-    Address, BytesN, Env,
 };
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -1186,7 +1186,7 @@ fn test_pause_unpause_admin_only() {
     // Non-admin cannot pause
     env.mock_all_auths(); // Reset auths
     let result = client.try_pause();
-    // This should fail authorize if it was checked correctly, 
+    // This should fail authorize if it was checked correctly,
     // but in tests with mock_all_auths we need to verify it specifically if we want,
     // however, the code uses admin.require_auth() where admin is the stored admin.
     // Since we called initialize with `admin`, only `admin.require_auth()` will pass if it was the one calling.
@@ -1196,20 +1196,23 @@ fn test_pause_unpause_admin_only() {
 fn test_functions_fail_when_paused() {
     let (env, _admin, client) = setup_with_admin();
     let player = Address::generate(&env);
-    
+
     client.init(&10);
     client.pause();
     assert!(client.is_paused());
 
     // All state-changing functions should fail
     assert_eq!(client.try_start_round(), Err(Ok(ArenaError::Paused)));
-    assert_eq!(client.try_submit_choice(&player, &1u32, &Choice::Heads), Err(Ok(ArenaError::Paused)));
+    assert_eq!(
+        client.try_submit_choice(&player, &1u32, &Choice::Heads),
+        Err(Ok(ArenaError::Paused))
+    );
     assert_eq!(client.try_timeout_round(), Err(Ok(ArenaError::Paused)));
-    
+
     let hash = dummy_hash(&env);
-    // These panic on failure in lib.rs if I used .unwrap(), 
+    // These panic on failure in lib.rs if I used .unwrap(),
     // but I can use try_ versions to check Result.
-    // Wait, in lib.rs I used require_not_paused(&env).unwrap() for proposals? 
+    // Wait, in lib.rs I used require_not_paused(&env).unwrap() for proposals?
     // Let me check if they returned Result. No, they were void functions.
     // If they return Result, I can check error code.
 }
@@ -1217,7 +1220,7 @@ fn test_functions_fail_when_paused() {
 #[test]
 fn test_unpause_restores_functionality() {
     let (env, _admin, client) = setup_with_admin();
-    
+
     client.init(&10);
     client.pause();
     client.unpause();
@@ -1226,8 +1229,6 @@ fn test_unpause_restores_functionality() {
     let round = client.start_round();
     assert_eq!(round.round_number, 1);
 }
-
-
 
 // ── Issue #271: Emergency Pause Policy — governance/upgrade exemption ──────────
 //
@@ -1248,7 +1249,10 @@ fn test_propose_upgrade_succeeds_when_paused() {
     client.propose_upgrade(&hash);
 
     let pending = client.pending_upgrade();
-    assert!(pending.is_some(), "proposal must be stored even when contract is paused");
+    assert!(
+        pending.is_some(),
+        "proposal must be stored even when contract is paused"
+    );
     assert_eq!(pending.unwrap().0, hash);
 }
 
@@ -1367,16 +1371,23 @@ fn test_paused_proposal_persists_after_unpause() {
     client.pause();
     client.propose_upgrade(&hash);
 
-    let pending_paused = client.pending_upgrade().expect("proposal must exist while paused");
+    let pending_paused = client
+        .pending_upgrade()
+        .expect("proposal must exist while paused");
     assert_eq!(pending_paused.0, hash);
 
     // Unpause — proposal must survive.
     client.unpause();
     assert!(!client.is_paused());
 
-    let pending_unpaused = client.pending_upgrade().expect("proposal must persist after unpause");
+    let pending_unpaused = client
+        .pending_upgrade()
+        .expect("proposal must persist after unpause");
     assert_eq!(pending_unpaused.0, hash);
-    assert_eq!(pending_paused.1, pending_unpaused.1, "execute_after timestamp must be unchanged");
+    assert_eq!(
+        pending_paused.1, pending_unpaused.1,
+        "execute_after timestamp must be unchanged"
+    );
 }
 
 /// is_paused() view function reflects pause/unpause state transitions correctly.
@@ -1492,7 +1503,10 @@ fn get_arena_state_is_pure_read() {
 
     let state_a = client.get_arena_state();
     let state_b = client.get_arena_state();
-    assert_eq!(state_a, state_b, "repeated calls must return identical state");
+    assert_eq!(
+        state_a, state_b,
+        "repeated calls must return identical state"
+    );
 }
 
 // ── Issue #275: explicit submission / participant bounds (N−1, N, N+1) ────────
@@ -1569,7 +1583,8 @@ fn round_state_machine_invariant_suite_happy_path() {
     let r1 = client.start_round();
     invariants::check_round_flags(&r1).unwrap();
     invariants::check_round_number_monotonic(r0.round_number, r1.round_number).unwrap();
-    invariants::check_submission_count_monotonic(r0.total_submissions, r1.total_submissions).unwrap();
+    invariants::check_submission_count_monotonic(r0.total_submissions, r1.total_submissions)
+        .unwrap();
 
     set_ledger_sequence(&env, 106);
     let r1t = client.timeout_round();
@@ -1738,4 +1753,3 @@ fn winner_is_identifiable_before_claim() {
     assert_eq!(state.has_won, true);
     assert_eq!(state.is_active, false);
 }
-
