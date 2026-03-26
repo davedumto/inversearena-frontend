@@ -653,16 +653,16 @@ impl ArenaContract {
             return Err(ArenaError::ReentrancyGuard);
         }
 
-        // ── CHECK: prize pool must be non-zero ────────────────────────────────────
-        let prize: i128 = env.storage().instance().get(&PRIZE_POOL_KEY).unwrap_or(0);
-        if prize <= 0 {
-            return Err(ArenaError::NoPrizeToClaim);
-        }
-
         // ── CHECK: winner must not have claimed before ────────────────────────────
         let prize_key = DataKey::PrizeClaimed(winner.clone());
         if storage(&env).has(&prize_key) {
             return Err(ArenaError::AlreadyClaimed);
+        }
+
+        // ── CHECK: prize pool must be non-zero ────────────────────────────────────
+        let prize: i128 = env.storage().instance().get(&PRIZE_POOL_KEY).unwrap_or(0);
+        if prize <= 0 {
+            return Err(ArenaError::NoPrizeToClaim);
         }
 
         // ── CHECK: token must be configured ───────────────────────────────────────

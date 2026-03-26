@@ -12,6 +12,7 @@ use factory::{FactoryContract, FactoryContractClient};
 use payout::{PayoutContract, PayoutContractClient};
 use soroban_sdk::{
     testutils::{Address as _, Ledger, LedgerInfo},
+    token::StellarAssetClient,
     Address, BytesN, Env,
 };
 
@@ -72,7 +73,7 @@ fn deploy_arena(
 
     arena.init(&round_speed);
     arena.initialize(admin);
-    let _ = token;
+    arena.set_token(token);
 
     arena
 }
@@ -140,12 +141,17 @@ fn test_double_claim_prevention() {
     let admin = Address::generate(&env);
     let (_factory, _) = deploy_all(&env, &admin);
 
-    let xlm_address = Address::generate(&env);
-    let arena = deploy_arena(&env, &admin, 10u32, &xlm_address);
+    let token_admin = Address::generate(&env);
+    let token_id = env
+        .register_stellar_asset_contract_v2(token_admin.clone())
+        .address();
+    let token = StellarAssetClient::new(&env, &token_id);
+    let arena = deploy_arena(&env, &admin, 10u32, &token_id);
 
     let player = Address::generate(&env);
     let stake = 1000i128;
     let yield_comp = 10i128;
+    token.mint(&arena.address, &(stake + yield_comp));
 
     // Set player as winner
     env.mock_all_auths();
@@ -154,10 +160,9 @@ fn test_double_claim_prevention() {
     // First claim succeeds
     arena.claim(&player);
 
-    // Second claim currently fails with NoPrizeToClaim because the pool is
-    // depleted after the first successful claim.
+    // Second claim must fail with AlreadyClaimed even though the pool is empty.
     let result = arena.try_claim(&player);
-    assert_eq!(result, Err(Ok(ArenaError::NoPrizeToClaim)));
+    assert_eq!(result, Err(Ok(ArenaError::AlreadyClaimed)));
 }
 
 #[test]
